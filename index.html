@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>32 Teeth — Click Anesthesia Map (FDI)</title>
+<style>
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter','Segoe UI',sans-serif;
+  background:radial-gradient(ellipse at top,#f0f9ff 0%,#e0f2fe 40%,#bae6fd 100%);
+  min-height:100vh;
+  color:#0f172a;
+  padding:28px 16px 60px;
+}
+header.hero{
+  max-width:1100px;
+  margin:0 auto 24px;
+  text-align:center;
+}
+header.hero h1{
+  margin:0 0 6px;
+  font-size:2em;
+  letter-spacing:-.6px;
+  color:#0c4a6e;
+}
+header.hero .sub{
+  margin:0;
+  color:#475569;
+  font-size:1.02em;
+}
+header.hero .hint{
+  display:inline-block;
+  margin-top:10px;
+  background:rgba(14,165,233,.12);
+  color:#0c4a6e;
+  padding:5px 14px;
+  border-radius:999px;
+  font-size:.85em;
+  font-weight:500;
+}
+.chart-card{
+  max-width:1100px;
+  margin:0 auto;
+  background:#fff;
+  border-radius:24px;
+  padding:30px 24px 26px;
+  box-shadow:0 20px 60px rgba(15,23,42,.10),0 2px 6px rgba(15,23,42,.05);
+}
+.cardinal{
+  display:flex;
+  justify-content:space-between;
+  max-width:920px;
+  margin:0 auto 6px;
+  font-size:.72em;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:#94a3b8;
+  font-weight:600;
+}
+.arch-label{
+  text-align:center;
+  font-size:.78em;
+  font-weight:700;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  color:#0c4a6e;
+  margin:18px 0 6px;
+  padding:6px 0;
+  border-top:1px solid #e0f2fe;
+  border-bottom:1px solid #e0f2fe;
+}
+svg.chart{
+  display:block;
+  margin:0 auto;
+  width:100%;
+  max-width:920px;
+  height:auto;
+  user-select:none;
+}
+.tooth{cursor:pointer;transition:transform .15s ease}
+.tooth-shape{
+  stroke:#94a3b8;
+  stroke-width:1.4;
+  transition:all .18s ease;
+}
+.tooth-num{
+  fill:#1e293b;
+  font-weight:700;
+  font-size:11px;
+  text-anchor:middle;
+  pointer-events:none;
+  font-family:'SF Mono','JetBrains Mono',Menlo,monospace;
+  letter-spacing:.3px;
+}
+.tooth:hover{transform:translateY(-2px)}
+.tooth:hover .tooth-shape{
+  stroke:#0284c7;
+  stroke-width:2.2;
+  filter:drop-shadow(0 6px 10px rgba(2,132,199,.35));
+}
+.tooth:hover .tooth-num{fill:#0c4a6e;font-size:12px}
+.tooth.trap .tooth-shape{
+  stroke:#ea580c;
+  stroke-width:1.8;
+  stroke-dasharray:4 2;
+}
+.tooth.trap:hover .tooth-shape{
+  stroke:#c2410c;
+  stroke-width:2.6;
+  filter:drop-shadow(0 6px 12px rgba(234,88,12,.45));
+}
+.tooth.trap .trap-dot{
+  fill:#ea580c;
+}
+.upper.tooth-incisor .tooth-shape,
+.upper.tooth-canine  .tooth-shape{fill:#fef3c7}
+.upper.tooth-premolar .tooth-shape{fill:#bbf7d0}
+.upper.tooth-molar    .tooth-shape{fill:#fecaca}
+.lower .tooth-shape{fill:#dbeafe}
+.lower.trap .tooth-shape{fill:#bfdbfe}
+.midline{stroke:#cbd5e1;stroke-dasharray:3 4;stroke-width:1}
+.midline-text{fill:#94a3b8;font-size:9px;text-anchor:middle;font-family:-apple-system,sans-serif;letter-spacing:.6px}
+
+.legend{
+  display:flex;
+  gap:14px 22px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-top:22px;
+  padding-top:18px;
+  border-top:1px solid #f1f5f9;
+  font-size:.82em;
+  color:#475569;
+}
+.legend-item{display:flex;align-items:center;gap:7px}
+.swatch{
+  width:14px;height:14px;border-radius:4px;
+  border:1px solid #cbd5e1;
+  flex-shrink:0;
+}
+.dashed{border:1.5px dashed #ea580c;background:#fff}
+
+/* Chart highlighting when modal is open */
+.tooth.current .tooth-shape{
+  stroke:#0c4a6e;
+  stroke-width:3;
+  filter:drop-shadow(0 0 12px rgba(12,74,110,.7));
+}
+.tooth.matched .tooth-shape{
+  stroke:#10b981;
+  stroke-width:2.5;
+  filter:drop-shadow(0 0 8px rgba(16,185,129,.55));
+}
+.tooth.matched .tooth-num,
+.tooth.current .tooth-num{font-size:12px}
+
+/* Match chips inside modal */
+.match-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.match-chip{
+  background:#ecfdf5;
+  color:#065f46;
+  border:1px solid #6ee7b7;
+  padding:7px 14px;
+  border-radius:999px;
+  font-family:'SF Mono','JetBrains Mono',Menlo,monospace;
+  font-size:.92em;
+  font-weight:700;
+  cursor:pointer;
+  transition:all .14s ease;
+  letter-spacing:.3px;
+}
+.match-chip:hover{
+  background:#10b981;
+  color:#fff;
+  border-color:#10b981;
+  transform:translateY(-1px);
+  box-shadow:0 4px 10px rgba(16,185,129,.35);
+}
+.match-chip .label{
+  display:block;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  font-weight:500;
+  font-size:.72em;
+  opacity:.75;
+  margin-top:2px;
+}
+.match-empty{
+  color:#64748b;
+  font-size:.88em;
+  font-style:italic;
+  padding:8px 12px;
+  background:#f8fafc;
+  border-radius:8px;
+}
+.match-hint{
+  color:#94a3b8;
+  font-size:.78em;
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.match-hint::before{
+  content:'';
+  width:10px;height:10px;border-radius:50%;
+  background:#10b981;
+  box-shadow:0 0 6px rgba(16,185,129,.6);
+}
+
+/* MODAL */
+.modal-backdrop{
+  position:fixed;inset:0;
+  background:rgba(15,23,42,.6);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  z-index:100;
+  animation:fade .2s ease;
+}
+.modal-backdrop.open{display:flex}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{transform:scale(.92) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal{
+  background:#fff;
+  border-radius:20px;
+  max-width:620px;
+  width:100%;
+  max-height:92vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.3),0 4px 12px rgba(0,0,0,.15);
+  animation:pop .28s cubic-bezier(.34,1.56,.64,1);
+}
+.modal-head{
+  padding:24px 28px 18px;
+  background:linear-gradient(135deg,#0c4a6e 0%,#1e40af 65%,#5b21b6 100%);
+  color:#fff;
+  position:relative;
+}
+.modal-head .fdi-badge{
+  display:inline-block;
+  background:rgba(255,255,255,.18);
+  padding:5px 14px;
+  border-radius:10px;
+  font-family:'SF Mono',Menlo,monospace;
+  font-size:.95em;
+  font-weight:700;
+  letter-spacing:.6px;
+  margin-bottom:8px;
+}
+.modal-head h2{
+  margin:0;
+  font-size:1.35em;
+  letter-spacing:-.3px;
+  font-weight:600;
+}
+.modal-head .meta{
+  margin-top:6px;
+  opacity:.82;
+  font-size:.85em;
+  letter-spacing:.4px;
+}
+.modal-close{
+  position:absolute;top:18px;right:18px;
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.18);
+  border:0;color:#fff;font-size:20px;
+  cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s ease;
+}
+.modal-close:hover{background:rgba(255,255,255,.32)}
+
+.modal-body{padding:22px 26px 26px;overflow-y:auto}
+
+.trap-banner{
+  background:#fff7ed;
+  border-left:4px solid #ea580c;
+  border-radius:8px;
+  padding:13px 16px;
+  margin-bottom:18px;
+  font-size:.92em;
+  line-height:1.5;
+}
+.trap-banner .trap-title{
+  display:block;
+  color:#c2410c;
+  font-weight:700;
+  margin-bottom:4px;
+  font-size:.94em;
+}
+.note-banner{
+  background:#eff6ff;
+  border-left:4px solid #3b82f6;
+  border-radius:8px;
+  padding:11px 16px;
+  margin-top:16px;
+  font-size:.88em;
+  color:#1e3a8a;
+  line-height:1.5;
+}
+
+.section-title{
+  font-size:.75em;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:#64748b;
+  font-weight:700;
+  margin:20px 0 10px;
+}
+.section-title:first-of-type{margin-top:0}
+
+.nerves-list{display:grid;gap:8px}
+.nerve-row{
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  gap:14px;
+  padding:11px 14px;
+  background:#f8fafc;
+  border-radius:9px;
+  font-size:.9em;
+}
+.nerve-row .loc{color:#334155;font-weight:500}
+.nerve-row .nerve-info{text-align:right}
+.nerve-row .nerve{font-weight:700;color:#0c4a6e;font-size:.94em}
+.nerve-row .full{
+  display:block;
+  color:#64748b;
+  font-weight:400;
+  font-size:.83em;
+  margin-top:2px;
+  font-style:italic;
+}
+
+.tech-card{
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:11px;
+  padding:14px 16px 12px;
+  margin:10px 0;
+  transition:border-color .15s ease;
+}
+.tech-card:hover{border-color:#bae6fd}
+.tech-name{
+  font-weight:700;
+  color:#0f172a;
+  margin-bottom:10px;
+  font-size:.95em;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  line-height:1.35;
+}
+.step-num{
+  background:#0284c7;
+  color:#fff;
+  width:24px;height:24px;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.78em;
+  font-weight:700;
+  flex-shrink:0;
+}
+.tech-detail{
+  display:grid;
+  grid-template-columns:78px 1fr;
+  gap:6px 12px;
+  font-size:.87em;
+  margin:0;
+}
+.tech-detail dt{font-weight:600;color:#64748b;margin:0}
+.tech-detail dd{margin:0;color:#334155}
+.tech-note{
+  margin-top:10px;
+  padding:9px 12px;
+  background:#fef9c3;
+  border-left:3px solid #ca8a04;
+  border-radius:6px;
+  font-size:.84em;
+  color:#713f12;
+  line-height:1.45;
+}
+
+.injection-count{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:linear-gradient(135deg,#0c4a6e,#1e40af);
+  color:#fff;
+  padding:14px 20px;
+  border-radius:11px;
+  margin-top:20px;
+  font-weight:600;
+  font-size:.92em;
+}
+.injection-count .count{
+  background:rgba(255,255,255,.22);
+  padding:5px 14px;
+  border-radius:999px;
+  font-size:1.15em;
+}
+
+@media(max-width:640px){
+  header.hero h1{font-size:1.4em}
+  .chart-card{padding:20px 14px;border-radius:18px}
+  .arch-label{font-size:.7em}
+  .modal-head{padding:20px 22px 14px}
+  .modal-head h2{font-size:1.1em}
+  .modal-body{padding:18px 20px 22px}
+  .nerve-row{grid-template-columns:1fr;gap:6px}
+  .nerve-row .nerve-info{text-align:left}
+  .tech-detail{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>🦷 Click-to-Reveal Anesthesia Map</h1>
+  <p class="sub">All 32 teeth, FDI numbering. Tap any tooth for its nerves and technique.</p>
+  <span class="hint">⚠️ Dashed orange border = trap tooth (read the warning)</span>
+  <div style="margin-top:14px">
+    <a href="TECHNIQUES.html" style="color:#0c4a6e;text-decoration:none;background:#fff;padding:8px 16px;border-radius:999px;font-size:.88em;box-shadow:0 2px 8px rgba(15,23,42,.08);font-weight:600">🧪 Techniques reference →</a>
+  </div>
+</header>
+
+<div class="chart-card">
+  <div class="cardinal">
+    <span>← Patient's RIGHT</span>
+    <span>midline</span>
+    <span>Patient's LEFT →</span>
+  </div>
+
+  <div class="arch-label">Maxilla — Q1 + Q2</div>
+  <svg class="chart" id="upperArch" viewBox="0 0 920 100"></svg>
+
+  <div class="arch-label">Mandible — Q4 + Q3</div>
+  <svg class="chart" id="lowerArch" viewBox="0 0 920 100"></svg>
+
+  <div class="legend">
+    <div class="legend-item"><span class="swatch" style="background:#fef3c7"></span>Upper anterior (ASAN + NPN)</div>
+    <div class="legend-item"><span class="swatch" style="background:#bbf7d0"></span>Upper premolar (MSAN + GPN)</div>
+    <div class="legend-item"><span class="swatch" style="background:#fecaca"></span>Upper molar (PSAN + GPN)</div>
+    <div class="legend-item"><span class="swatch" style="background:#dbeafe"></span>Mandibular (IAN + LN ± LBN)</div>
+    <div class="legend-item"><span class="swatch dashed"></span>Trap tooth</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="fdi-badge" id="m-fdi">1.6</span>
+      <h2 id="m-name">Upper Right First Molar</h2>
+      <div class="meta" id="m-meta">Maxilla · Quadrant 1 · Molar</div>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ===== TECHNIQUE LIBRARY =====
+const T = {
+  PLEXAL: {
+    name: 'Plexal (supraperiosteal) infiltration',
+    site: 'Vestibular fornix / buccal sulcus above the tooth apex',
+    depth: 'Submucosal + supraperiosteal — few mm',
+    volume: '0.6 mL'
+  },
+  PLEXAL_MB_M1: {
+    name: 'Plexal supplement at MB root',
+    site: 'Vestibular fornix above the MB root of upper M1 (1.6 / 2.6)',
+    depth: 'Submucosal + supraperiosteal',
+    volume: '0.6 mL',
+    note: 'PSA tuberosity block bypasses the MB root — this supplement catches the MSAN twigs or plexal anastomoses.'
+  },
+  PSA: {
+    name: 'PSA tuberosity block (peripheral trunk block)',
+    site: 'Buccal sulcus near MB root of upper M2, behind the zygomatic process',
+    depth: '10–15 mm to bone contact',
+    volume: '~1 mL',
+    note: 'Direction: up 45° + inward + backward. MANDATORY ASPIRATION — pterygoid venous plexus → tuberosity hematoma. If positive: gauze + thenar compression in superior fornix.'
+  },
+  IO: {
+    name: 'Infraorbital nerve block (intraoral)',
+    site: 'Vestibular ~0.5 cm from buccal surface, parallel to long axis of upper P1; finger palpates IO foramen',
+    depth: '1.5–2.5 cm to foramen',
+    volume: '1.5–2 mL drawn — small test, locate foramen, aspirate + slow inject',
+    note: 'Single block covers ASA (and MSA when present) — reliable for upper I, C, P (and MB root of M1 via MSA).'
+  },
+  IO_EXTRA: {
+    name: 'Infraorbital nerve block (extraoral)',
+    site: 'Skin: horizontal line through nasal wing, 0.5 cm lateral to nasolabial groove',
+    depth: 'To IO foramen',
+    volume: '0.2 mL test + 0.2 mL after needle fixes in foramen',
+    note: 'NOT necessary to enter the canal.'
+  },
+  GPN: {
+    name: 'Greater Palatine block (peripheral trunk at GP foramen)',
+    site: 'Palatine mucoperiosteum, 1 cm medial to upper M3 alveolar ridge (palatal fibromucosa appears paler / funnel-shaped over the foramen)',
+    depth: 'Submucosal — do NOT enter the canal',
+    volume: '0.2–0.3 mL ONLY',
+    note: 'Syringe approaches from the opposite commissure. Over-injection → ischemic palatal necrosis.'
+  },
+  NPN: {
+    name: 'Nasopalatine block at incisive foramen',
+    site: 'Palatal mucosa lateral to the incisive (retroincisal) papilla — NEVER sting the papilla itself',
+    depth: '5–6 mm into nasopalatine canal',
+    volume: '0.2–0.3 mL',
+    note: 'V/Y canal: ALWAYS enter from the side OPPOSITE to the tooth you want to block — the trajectory crosses to the target trunk.'
+  },
+  PALATAL_INFIL: {
+    name: 'Local palatal infiltration',
+    site: 'Palatal fibromucosa 3–5 mm lateral to the palatal gingival groove of the tooth, toward the midline',
+    depth: 'Submucosal',
+    volume: '0.2 mL',
+    note: 'For 1–2 teeth only. Do NOT puncture the greater palatine artery.'
+  },
+  TRANSFRENULAR: {
+    name: 'Trans-frenular plexal',
+    site: 'Upper labial frenulum',
+    depth: 'Submucosal',
+    volume: '0.3 mL',
+    note: 'Catches contralateral crossover for the upper central incisors (1.1 ↔ 2.1).'
+  },
+  SPIX: {
+    name: 'IAN block — Spix\'s spine technique (covers IAN + LN)',
+    site: 'Lateral to the pterygomandibular fold, medial to the temporal crest, 1 cm above the occlusal plane. Syringe body lies over the OPPOSITE-side premolars.',
+    depth: '2–2.5 cm to bone contact',
+    volume: '1–1.7 mL',
+    note: 'T1: aspirate → deposit at bone contact (IAN). T2: withdraw needle 1 cm, aspirate again, slow deposit (Lingual n). Two aspirations are mandatory. Failure 15–20%. If needle passes posterior to ramus → parotid → CN VII facial palsy — ALWAYS confirm bone contact first.'
+  },
+  MENTAL_IN: {
+    name: 'Mental + incisive block (intraoral)',
+    site: 'Vestibular fornix at the mesio-buccal root of lower M1; advance toward the mental foramen',
+    depth: 'Locate foramen — needle becomes "fixed" once in the canal',
+    volume: '0.2 mL test (to locate) + 0.2 mL deposit',
+    note: 'Aspirate before deposit. Mental foramen typically sits between roots of lower P1–P2.'
+  },
+  MENTAL_EX: {
+    name: 'Mental + incisive block (extraoral)',
+    site: 'Cheek, 1.5–2 cm posterior to the commissure of the mouth on a horizontal line',
+    depth: 'Advance to mental foramen',
+    volume: '0.2 mL test + 0.2 mL deposit'
+  },
+  LONG_BUCCAL: {
+    name: 'Long buccal nerve block — at base of coronoid process',
+    site: 'Anterior edge of the vertical mandibular ramus, base of coronoid process — syringe approaches from the opposite commissure',
+    depth: '2–4 mm',
+    volume: '0.3–0.5 mL'
+  },
+  BUCCAL_INFIL: {
+    name: 'Long buccal — vestibular infiltration',
+    site: 'Vestibular mucosa distal and vestibular to lower M3',
+    depth: 'Submucosal + supraperiosteal',
+    volume: '0.3–0.5 mL'
+  },
+  LINGUAL_M3: {
+    name: 'Lingual block at M3 (isolated)',
+    site: 'Paralingual fold next to lower M3, midway between gingiva and tongue base',
+    depth: '0.5 cm',
+    volume: '~0.5 mL',
+    note: 'Lingual n. becomes superficial just distal to lower M3 — easy access, surgical danger zone.'
+  },
+  THEODORESCU: {
+    name: 'Dan Theodorescu lingual technique',
+    site: 'Angle between oral floor and lingual surface of mandible, next to canine or P2 (P2 is the classic landmark)',
+    depth: '0.5 cm',
+    volume: '~0.5 mL'
+  },
+};
+
+// ===== TOOTH DATA (Q1 + Q4 defined, mirrored to Q2 + Q3) =====
+const TEETH = {
+  '1.1': { name:'Central Incisor', side:'Upper Right', quadrant:1, type:'incisor', arch:'upper', width:38,
+    trap:true, trapTitle:'Midline crossover',
+    trapText:'Contralateral ASAN fibers cross the midline at the centrals. Plexal alone may leave residual labial sensation — add the trans-frenular supplement if numbness is incomplete.',
+    nerves:[
+      {loc:'Pulp + labial bone + gingiva', nerve:'ASAN', full:'Anterior superior alveolar n.'},
+      {loc:'Palatal gingiva + bone',       nerve:'NPN',  full:'Nasopalatine (Scarpa) n.'},
+      {loc:'Midline crossover',            nerve:'contralateral ASAN', full:''},
+    ],
+    techniques:['PLEXAL','NPN','TRANSFRENULAR'], injections:'2–3'
+  },
+  '1.2': { name:'Lateral Incisor', side:'Upper Right', quadrant:1, type:'incisor', arch:'upper', width:34,
+    nerves:[
+      {loc:'Pulp + labial bone + gingiva', nerve:'ASAN', full:'Anterior superior alveolar n.'},
+      {loc:'Palatal gingiva + bone',       nerve:'NPN',  full:'Nasopalatine (Scarpa) n.'},
+    ],
+    techniques:['PLEXAL','NPN'], injections:'2'
+  },
+  '1.3': { name:'Canine', side:'Upper Right', quadrant:1, type:'canine', arch:'upper', width:36,
+    trap:true, trapTitle:'NPN ↔ GPN anastomosis zone',
+    trapText:'At the canine, NPN territory ends and GPN begins (the two anastomose around P1). If palatal numbness is incomplete, add a local palatal infiltration distal to the canine.',
+    nerves:[
+      {loc:'Pulp + buccal',          nerve:'ASAN',       full:'Anterior superior alveolar n.'},
+      {loc:'Palatal gingiva + bone', nerve:'NPN ± GPN',  full:'Anastomosis zone'},
+    ],
+    techniques:['PLEXAL','NPN','PALATAL_INFIL'], injections:'2 (+1 if needed)'
+  },
+  '1.4': { name:'First Premolar', side:'Upper Right', quadrant:1, type:'premolar', arch:'upper', width:40,
+    nerves:[
+      {loc:'Pulp + buccal',          nerve:'MSAN (if present) / ASA-PSA overlap', full:'Middle superior alveolar n.'},
+      {loc:'Palatal gingiva + bone', nerve:'GPN ± NPN (anastomosis)',             full:'Greater palatine n.'},
+    ],
+    techniques:['PLEXAL','IO','GPN'], injections:'2'
+  },
+  '1.5': { name:'Second Premolar', side:'Upper Right', quadrant:1, type:'premolar', arch:'upper', width:40,
+    nerves:[
+      {loc:'Pulp + buccal',          nerve:'MSAN (if present) / PSAN overlap', full:'Middle superior alveolar n.'},
+      {loc:'Palatal gingiva + bone', nerve:'GPN',                              full:'Greater palatine n.'},
+    ],
+    techniques:['PLEXAL','IO','GPN'], injections:'2',
+    note:'Upper P2 apex is THE dental landmark for the IO block — the IO foramen sits ~2–2.5 cm above this apex.'
+  },
+  '1.6': { name:'First Molar', side:'Upper Right', quadrant:1, type:'molar', arch:'upper', width:52,
+    trap:true, trapTitle:'⚠️ TRAP TOOTH — MB root escapes PSAN',
+    trapText:'PSAN does NOT supply the MB root of upper M1. A PSA tuberosity block ALONE will leave the MB root sensitive — always supplement with a plexal at the MB root (or use IO block when MSA is present).',
+    nerves:[
+      {loc:'Pulp DB + Palatal roots', nerve:'PSAN',                    full:'Posterior superior alveolar n.'},
+      {loc:'Pulp MB root',            nerve:'MSAN (often absent → plexal twigs)', full:'Middle superior alveolar n.'},
+      {loc:'Buccal gingiva',          nerve:'PSAN',                    full:''},
+      {loc:'Palatal gingiva + bone',  nerve:'GPN',                     full:'Greater palatine n.'},
+    ],
+    techniques:['PSA','PLEXAL_MB_M1','GPN'], injections:'3'
+  },
+  '1.7': { name:'Second Molar', side:'Upper Right', quadrant:1, type:'molar', arch:'upper', width:50,
+    nerves:[
+      {loc:'Pulp + buccal',          nerve:'PSAN', full:'Posterior superior alveolar n.'},
+      {loc:'Palatal gingiva + bone', nerve:'GPN',  full:'Greater palatine n.'},
+    ],
+    techniques:['PSA','GPN'], injections:'2',
+    note:'MB root of upper M2 is THE dental landmark for the PSA tuberosity block.'
+  },
+  '1.8': { name:'Third Molar', side:'Upper Right', quadrant:1, type:'molar', arch:'upper', width:46,
+    nerves:[
+      {loc:'Pulp + buccal',          nerve:'PSAN', full:'Posterior superior alveolar n.'},
+      {loc:'Palatal gingiva + bone', nerve:'GPN',  full:'Greater palatine n.'},
+    ],
+    techniques:['PSA','GPN'], injections:'2',
+    note:'GP foramen sits 1 cm medial to upper M3 — almost directly above this target.'
+  },
+
+  '4.1': { name:'Central Incisor', side:'Lower Right', quadrant:4, type:'incisor', arch:'lower', width:30,
+    trap:true, trapTitle:'Midline crossover',
+    trapText:'Contralateral incisive nerve fibers cross the midline. Spix on the same side alone often leaves residual sensation — supplement with a plexal labial infiltration at the contralateral central incisor (or do bilateral mental block).',
+    nerves:[
+      {loc:'Pulp + labial bone',  nerve:'IAN → incisive branch', full:'Inferior alveolar n.'},
+      {loc:'Labial gingiva',      nerve:'IAN → mental branch',   full:''},
+      {loc:'Lingual gingiva',     nerve:'LN',                    full:'Lingual n.'},
+      {loc:'Midline crossover',   nerve:'contralateral incisive',full:''},
+    ],
+    techniques:['SPIX','PLEXAL'], injections:'1 + supplement'
+  },
+  '4.2': { name:'Lateral Incisor', side:'Lower Right', quadrant:4, type:'incisor', arch:'lower', width:32,
+    trap:true, trapTitle:'Midline crossover possible',
+    trapText:'Crossover from opposite-side incisive fibers may leave residual sensation. Supplement with a contralateral plexal labial if Spix is incomplete.',
+    nerves:[
+      {loc:'Pulp + labial bone', nerve:'IAN → incisive branch', full:'Inferior alveolar n.'},
+      {loc:'Labial gingiva',     nerve:'IAN → mental branch',   full:''},
+      {loc:'Lingual gingiva',    nerve:'LN',                    full:'Lingual n.'},
+    ],
+    techniques:['SPIX','PLEXAL'], injections:'1 (±1)'
+  },
+  '4.3': { name:'Canine', side:'Lower Right', quadrant:4, type:'canine', arch:'lower', width:36,
+    nerves:[
+      {loc:'Pulp + buccal',  nerve:'IAN (incisive + mental)', full:'Inferior alveolar n.'},
+      {loc:'Lingual gingiva',nerve:'LN',                      full:'Lingual n.'},
+    ],
+    techniques:['SPIX','MENTAL_IN','THEODORESCU'], injections:'1'
+  },
+  '4.4': { name:'First Premolar', side:'Lower Right', quadrant:4, type:'premolar', arch:'lower', width:38,
+    nerves:[
+      {loc:'Pulp',                       nerve:'IAN',           full:'Inferior alveolar n.'},
+      {loc:'Buccal gingiva (via mental)',nerve:'IAN → mental',  full:'Mental foramen sits here'},
+      {loc:'Lingual gingiva',            nerve:'LN',            full:'Lingual n.'},
+    ],
+    techniques:['SPIX','MENTAL_IN'], injections:'1'
+  },
+  '4.5': { name:'Second Premolar', side:'Lower Right', quadrant:4, type:'premolar', arch:'lower', width:38,
+    nerves:[
+      {loc:'Pulp',           nerve:'IAN',          full:'Inferior alveolar n.'},
+      {loc:'Buccal gingiva', nerve:'IAN → mental', full:''},
+      {loc:'Lingual gingiva',nerve:'LN',           full:'Lingual n.'},
+    ],
+    techniques:['SPIX','THEODORESCU'], injections:'1',
+    note:'P2 is the landmark tooth for the Dan Theodorescu lingual technique.'
+  },
+  '4.6': { name:'First Molar', side:'Lower Right', quadrant:4, type:'molar', arch:'lower', width:52,
+    trap:true, trapTitle:'⚠️ Mental ends here — needs Long Buccal',
+    trapText:'The mental branch\'s buccal gingival territory ENDS at the mental foramen (premolar area). Molar buccal gingiva belongs to the LONG BUCCAL nerve (V3 anterior division). Spix ALONE does NOT cover the buccal flap.',
+    nerves:[
+      {loc:'Pulp + lingual aspect of buccal bone', nerve:'IAN', full:'Inferior alveolar n.'},
+      {loc:'Buccal gingiva + cheek',                nerve:'LBN', full:'Long buccal n. (V3 anterior div.)'},
+      {loc:'Lingual gingiva',                       nerve:'LN',  full:'Lingual n.'},
+    ],
+    techniques:['SPIX','LONG_BUCCAL'], injections:'2'
+  },
+  '4.7': { name:'Second Molar', side:'Lower Right', quadrant:4, type:'molar', arch:'lower', width:50,
+    trap:true, trapTitle:'Needs Long Buccal',
+    trapText:'Molar buccal gingiva = long buccal territory. Spix + Long Buccal is mandatory.',
+    nerves:[
+      {loc:'Pulp + lingual aspect', nerve:'IAN', full:'Inferior alveolar n.'},
+      {loc:'Buccal gingiva + cheek',nerve:'LBN', full:'Long buccal n.'},
+      {loc:'Lingual gingiva',       nerve:'LN',  full:'Lingual n.'},
+    ],
+    techniques:['SPIX','LONG_BUCCAL'], injections:'2'
+  },
+  '4.8': { name:'Third Molar', side:'Lower Right', quadrant:4, type:'molar', arch:'lower', width:46,
+    trap:true, trapTitle:'Long Buccal + LN danger zone',
+    trapText:'Lingual n. becomes superficial just DISTAL to lower M3 — surgical danger zone, easy to anesthetize by paralingual infiltration. Spix + Long Buccal mandatory; isolated LN block is a useful supplement.',
+    nerves:[
+      {loc:'Pulp + lingual aspect', nerve:'IAN', full:'Inferior alveolar n.'},
+      {loc:'Buccal gingiva + cheek',nerve:'LBN', full:'Long buccal n.'},
+      {loc:'Lingual gingiva + floor',nerve:'LN', full:'Lingual n.'},
+    ],
+    techniques:['SPIX','LONG_BUCCAL','LINGUAL_M3'], injections:'2 (±1)'
+  },
+};
+
+// Mirror Q1 → Q2 (upper left), Q4 → Q3 (lower left)
+const mirror = (from, to, side, q) => {
+  TEETH[to] = { ...TEETH[from], side, quadrant: q };
+};
+['1.1','1.2','1.3','1.4','1.5','1.6','1.7','1.8'].forEach(f => {
+  const t = '2.' + f.split('.')[1];
+  mirror(f, t, 'Upper Left', 2);
+});
+['4.1','4.2','4.3','4.4','4.5','4.6','4.7','4.8'].forEach(f => {
+  const t = '3.' + f.split('.')[1];
+  mirror(f, t, 'Lower Left', 3);
+});
+
+// ===== RENDER ARCH =====
+function renderArch(svgId, order) {
+  const svg = document.getElementById(svgId);
+  const isUpper = svgId === 'upperArch';
+  const gap = 3, midGap = 22;
+
+  let totalWidth = 0;
+  order.forEach((fdi, i) => {
+    if (i === 8) totalWidth += midGap;
+    totalWidth += TEETH[fdi].width;
+    if (i > 0 && i !== 8) totalWidth += gap;
+  });
+
+  let x = (920 - totalWidth) / 2;
+
+  order.forEach((fdi, i) => {
+    if (i === 8) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x + midGap/2);
+      line.setAttribute('x2', x + midGap/2);
+      line.setAttribute('y1', 5);
+      line.setAttribute('y2', 95);
+      line.setAttribute('class', 'midline');
+      svg.appendChild(line);
+      x += midGap;
+    }
+
+    const t = TEETH[fdi];
+    const w = t.width;
+    const h = t.type === 'canine' ? 78 : (t.type === 'incisor' ? 70 : (t.type === 'premolar' ? 64 : 60));
+    const y = isUpper ? 8 : (100 - 8 - h);
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', `tooth ${t.arch} tooth-${t.type}${t.trap ? ' trap' : ''}`);
+    g.setAttribute('data-fdi', fdi);
+
+    // Slightly tapered tooth shape — narrower toward occlusal
+    const taper = t.type === 'molar' ? 1.5 : (t.type === 'incisor' ? 3 : 2.5);
+    let d;
+    if (isUpper) {
+      // Upper: cervical (top) wider, occlusal (bottom) narrower
+      d = `M ${x+2},${y+4} Q ${x},${y},${x+5},${y} L ${x+w-5},${y} Q ${x+w},${y},${x+w-2},${y+4} L ${x+w-taper-1},${y+h-3} Q ${x+w-taper-2},${y+h+1},${x+w-taper-4},${y+h} L ${x+taper+4},${y+h} Q ${x+taper+2},${y+h+1},${x+taper+1},${y+h-3} Z`;
+    } else {
+      // Lower: cervical (bottom) wider, occlusal (top) narrower
+      d = `M ${x+taper+1},${y+3} Q ${x+taper+2},${y-1},${x+taper+4},${y} L ${x+w-taper-4},${y} Q ${x+w-taper-2},${y-1},${x+w-taper-1},${y+3} L ${x+w-2},${y+h-4} Q ${x+w},${y+h},${x+w-5},${y+h} L ${x+5},${y+h} Q ${x},${y+h},${x+2},${y+h-4} Z`;
+    }
+
+    const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    shape.setAttribute('d', d);
+    shape.setAttribute('class', 'tooth-shape');
+    g.appendChild(shape);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', x + w/2);
+    text.setAttribute('y', y + h/2 + 4);
+    text.setAttribute('class', 'tooth-num');
+    text.textContent = fdi;
+    g.appendChild(text);
+
+    // Trap marker dot
+    if (t.trap) {
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', x + w - 5);
+      dot.setAttribute('cy', isUpper ? y + 5 : y + h - 5);
+      dot.setAttribute('r', 3);
+      dot.setAttribute('class', 'trap-dot');
+      g.appendChild(dot);
+    }
+
+    g.addEventListener('click', () => openModal(fdi));
+    svg.appendChild(g);
+
+    x += w + gap;
+  });
+}
+
+// Patient's RIGHT (Q1/Q4) on screen LEFT — matches how a dentist sees a patient facing them?
+// Standard dental notation: patient's right is shown on the screen's left (as if looking at the patient).
+const upperOrder = ['1.8','1.7','1.6','1.5','1.4','1.3','1.2','1.1','2.1','2.2','2.3','2.4','2.5','2.6','2.7','2.8'];
+const lowerOrder = ['4.8','4.7','4.6','4.5','4.4','4.3','4.2','4.1','3.1','3.2','3.3','3.4','3.5','3.6','3.7','3.8'];
+renderArch('upperArch', upperOrder);
+renderArch('lowerArch', lowerOrder);
+
+// ===== PROTOCOL GROUPS (teeth that share the exact same nerve blocks) =====
+const techSig = (t) => [...new Set(t.techniques)].sort().join('|');
+const GROUPS = {};
+Object.entries(TEETH).forEach(([fdi, t]) => {
+  const s = techSig(t);
+  (GROUPS[s] = GROUPS[s] || []).push(fdi);
+});
+
+function getMatches(fdi) {
+  return GROUPS[techSig(TEETH[fdi])].filter(f => f !== fdi).sort();
+}
+
+function highlightMatches(fdi) {
+  const matches = getMatches(fdi);
+  document.querySelectorAll('.tooth').forEach(g => {
+    const f = g.getAttribute('data-fdi');
+    g.classList.toggle('current', f === fdi);
+    g.classList.toggle('matched', f !== fdi && matches.includes(f));
+  });
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.tooth').forEach(g => {
+    g.classList.remove('current');
+    g.classList.remove('matched');
+  });
+}
+
+// ===== MODAL =====
+function openModal(fdi) {
+  const t = TEETH[fdi];
+  document.getElementById('m-fdi').textContent = fdi;
+  document.getElementById('m-name').textContent = `${t.side} ${t.name}`;
+  document.getElementById('m-meta').textContent = `${t.arch === 'upper' ? 'Maxilla' : 'Mandible'} · Quadrant ${t.quadrant} · ${t.type[0].toUpperCase() + t.type.slice(1)}`;
+
+  const body = document.getElementById('modalBody');
+  body.innerHTML = '';
+
+  if (t.trap) {
+    const banner = document.createElement('div');
+    banner.className = 'trap-banner';
+    banner.innerHTML = `<span class="trap-title">${t.trapTitle}</span>${t.trapText}`;
+    body.appendChild(banner);
+  }
+
+  // Nerves
+  const nervesTitle = document.createElement('div');
+  nervesTitle.className = 'section-title';
+  nervesTitle.textContent = 'Nerves to anesthetize';
+  body.appendChild(nervesTitle);
+
+  const nervesList = document.createElement('div');
+  nervesList.className = 'nerves-list';
+  t.nerves.forEach(n => {
+    const row = document.createElement('div');
+    row.className = 'nerve-row';
+    row.innerHTML = `
+      <div class="loc">${n.loc}</div>
+      <div class="nerve-info">
+        <div class="nerve">${n.nerve}</div>
+        ${n.full ? `<span class="full">${n.full}</span>` : ''}
+      </div>`;
+    nervesList.appendChild(row);
+  });
+  body.appendChild(nervesList);
+
+  // Techniques
+  const techTitle = document.createElement('div');
+  techTitle.className = 'section-title';
+  techTitle.textContent = 'Technique';
+  body.appendChild(techTitle);
+
+  t.techniques.forEach((tk, i) => {
+    const tech = T[tk];
+    if (!tech) return;
+    const card = document.createElement('div');
+    card.className = 'tech-card';
+
+    let detailHtml = `<dt>Site</dt><dd>${tech.site}</dd>`;
+    if (tech.depth)  detailHtml += `<dt>Depth</dt><dd>${tech.depth}</dd>`;
+    if (tech.volume) detailHtml += `<dt>Volume</dt><dd>${tech.volume}</dd>`;
+
+    const noteHtml = tech.note ? `<div class="tech-note">${tech.note}</div>` : '';
+
+    card.innerHTML = `
+      <div class="tech-name"><span class="step-num">${i+1}</span><span>${tech.name}</span></div>
+      <dl class="tech-detail">${detailHtml}</dl>
+      ${noteHtml}`;
+    body.appendChild(card);
+  });
+
+  if (t.note) {
+    const note = document.createElement('div');
+    note.className = 'note-banner';
+    note.innerHTML = `<strong>Landmark note:</strong> ${t.note}`;
+    body.appendChild(note);
+  }
+
+  // Same protocol section
+  const matches = getMatches(fdi);
+  const matchTitle = document.createElement('div');
+  matchTitle.className = 'section-title';
+  matchTitle.textContent = 'Same protocol — these teeth use identical blocks';
+  body.appendChild(matchTitle);
+
+  if (matches.length > 0) {
+    const chips = document.createElement('div');
+    chips.className = 'match-chips';
+    matches.forEach(m => {
+      const mt = TEETH[m];
+      const chip = document.createElement('button');
+      chip.className = 'match-chip';
+      chip.title = `${mt.side} ${mt.name}`;
+      chip.innerHTML = `${m}<span class="label">${mt.side.split(' ').map(w => w[0]).join('')} · ${mt.name}</span>`;
+      chip.onclick = (e) => { e.stopPropagation(); openModal(m); };
+      chips.appendChild(chip);
+    });
+    body.appendChild(chips);
+    const hint = document.createElement('div');
+    hint.className = 'match-hint';
+    hint.textContent = 'Glowing green on the chart underneath';
+    body.appendChild(hint);
+  } else {
+    const empty = document.createElement('div');
+    empty.className = 'match-empty';
+    empty.textContent = 'Unique protocol — no other tooth uses the exact same combination of blocks.';
+    body.appendChild(empty);
+  }
+
+  // Injection count
+  const count = document.createElement('div');
+  count.className = 'injection-count';
+  count.innerHTML = `<span>Total injections needed</span><span class="count">${t.injections}</span>`;
+  body.appendChild(count);
+
+  highlightMatches(fdi);
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  clearHighlights();
+}
+
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') closeModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+
+</body>
+</html>
